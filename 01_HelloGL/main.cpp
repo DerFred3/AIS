@@ -1,9 +1,9 @@
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
+#include <GLEnv.h>
+#include <Mat4.h>
+#include <GLAppKeyTranslation.h>
+
 #include <iostream>
 #include <sstream>
-
-#include <GLDebug.h>
 
 GLFWwindow* window;
 GLuint vbo;
@@ -35,23 +35,15 @@ const char* fragmentShaderSource =
 "  fragColor = vec4(1.0f, 1.0f, 1.0f, 1.0);\n"
 "}\0";
 
-static void init() {
-  const GLubyte* glVersion = glGetString(GL_VERSION);
-  const GLubyte* slVersion = glGetString(GL_SHADING_LANGUAGE_VERSION);
-  std::cout << glVersion << std::endl;
-  std::cout << slVersion << std::endl;
-}
 
 static void draw() {
-  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  GL( glClearColor(0.0f, 0.0f, 0.0f, 1.0f) );
   GL( glClear(GL_COLOR_BUFFER_BIT) );
-  
+
   GL( glBindVertexArray(vao) );
   GL( glUseProgram(program) );
   GL( glDrawArrays(GL_TRIANGLES, 0, 3) );
   GL( glBindVertexArray(0) );
-  
-  glfwSwapBuffers(window);
 }
 
 static void setupShaders() {
@@ -94,59 +86,41 @@ static void setupGeometry() {
   GL( glBindVertexArray(0) );
 }
 
-static void processInput(GLFWwindow* window) {
-  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    glfwSetWindowShouldClose(window, true);
-}
+#ifndef __EMSCRIPTEN__
+static void keyCallback(GLFWwindow* window, int key, int scancode, int action,
+  int mods) {
+    if (glfwGetKey(window, GLENV_KEY_ESCAPE) == GLENV_PRESS)
+      glfwSetWindowShouldClose(window, true);
+  }
 
-static void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+static void sizeCallback(GLFWwindow* window, int width, int height) {
   int w, h;
   glfwGetFramebufferSize(window, &w, &h);
   GL( glViewport(0, 0, w, h) );
 }
 
+#endif
+
 int main(int argc, char** argv) {
-	// initialize glfw and glew
-	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-	window = glfwCreateWindow(800, 600, "Assignment 01 - Hello OpenGL", NULL, NULL);
-	if (window == NULL) {
-		std::cout << "Failed to create GLFW window!" << std::endl;
-		glfwTerminate();
-		return -1;
-	}
-
-	glfwMakeContextCurrent(window);
-
-	GLenum err(glewInit());
-	if (err != GLEW_OK) {
-		std::stringstream s;
-		s << "Failed to init GLEW " << glewGetErrorString(err) << std::endl;
-		glfwTerminate();
-		throw GLException(s.str());
-	}
-
-	// set the opengl viewport to match the window resolution
-  int width, height;
-  glfwGetFramebufferSize(window, &width, &height);
-	glViewport(0, 0, width, height);
-	glfwSetWindowSizeCallback(window, framebuffer_size_callback);
-
-	init();
-	setupShaders();
-	setupGeometry();
-
-	// main loop
-	while (!glfwWindowShouldClose(window)) {
-		processInput(window);
-		draw();
-		glfwPollEvents();
-	}
-
-	glfwTerminate();
-	return EXIT_SUCCESS;
+#ifdef __EMSCRIPTEN__
+  GLEnv glEnv{800,600,1,"My First OpenGL Program",true,false,3,0,true};
+#else
+  GLEnv glEnv{800,600,1,"My First OpenGL Program",true,false,4,1,true};
+  glEnv.setKeyCallback(keyCallback);
+  glEnv.setResizeCallback(sizeCallback);
+#endif
+  
+  setupShaders();
+  setupGeometry();
+  
+#ifdef __EMSCRIPTEN__
+  emscripten_set_main_loop_arg(draw, nullptr, 0, 1);
+#else
+  while (!glEnv.shouldClose()) {
+    draw();
+    glEnv.endOfFrame();
+  }
+#endif
+  
+  return EXIT_SUCCESS;
 }
