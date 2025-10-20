@@ -13,9 +13,7 @@ const Vec3 RAINBOW_COLOR{-2.0f,-2.0f,-2.0f};
 
 class AbstractParticleSystem {
 public:
-  AbstractParticleSystem(float pointSize, float refDepth=1.0f);
-  virtual ~AbstractParticleSystem() {}
-  
+    AbstractParticleSystem(float pointSize, float refDepth=1.0f);
 	virtual void update(float t) = 0;
 		
 	void setPointSize(float pointSize, float refDepth=1.0f) {
@@ -35,11 +33,11 @@ public:
     
 private:
 	float pointSize;
-    float refDepth;
+  float refDepth;
 	
 	GLProgram prog;
 	GLint mvpLocation;
-    GLint ppLocation;
+  GLint ppLocation;
 	GLint texLocation;	
 	GLTexture2D sprite;	
 	

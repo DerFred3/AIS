@@ -189,18 +189,23 @@ void GLProgram::setUniform(GLint id, const std::vector<Mat4>& value, bool transp
   // hence, we invert the transposition flag
   GL(glUniformMatrix4fv(id, GLsizei(value.size()), !transpose, (GLfloat*)value.data()));
 }
-
-void GLProgram::setTexture(GLint id, const GLDepthTexture& texture, GLenum unit) const {
-  GL(glActiveTexture(GL_TEXTURE0 + unit));
-  GL(glBindTexture(GL_TEXTURE_2D, texture.getId()));
-  GL(glUniform1i(id, GLint(unit)));
-}
-
+#ifndef __EMSCRIPTEN__
 void GLProgram::setTexture(GLint id, const GLTexture1D& texture, GLenum unit) const {
   GL(glActiveTexture(GL_TEXTURE0 + unit));
   GL(glBindTexture(GL_TEXTURE_1D, texture.getId()));
   GL(glUniform1i(id, GLint(unit)));
 }
+void GLProgram::setTexture(GLint id, const GLTextureCube& texture, GLenum unit) const {
+  GL(glActiveTexture(GL_TEXTURE0 + unit));
+  GL(glBindTexture(GL_TEXTURE_CUBE_MAP, texture.getId()));
+  GL(glUniform1i(id, GLint(unit)));
+}
+void GLProgram::setTexture(GLint id, const GLDepthTexture& texture, GLenum unit) const {
+  GL(glActiveTexture(GL_TEXTURE0 + unit));
+  GL(glBindTexture(GL_TEXTURE_2D, texture.getId()));
+  GL(glUniform1i(id, GLint(unit)));
+}
+#endif
 
 void GLProgram::setTexture(GLint id, const GLTexture2D& texture, GLenum unit) const {
 	GL(glActiveTexture(GL_TEXTURE0 + unit));
@@ -214,16 +219,12 @@ void GLProgram::setTexture(GLint id, const GLTexture3D& texture, GLenum unit) co
   GL(glUniform1i(id, GLint(unit)));
 }
 
-void GLProgram::setTexture(GLint id, const GLTextureCube& texture, GLenum unit) const {
-  GL(glActiveTexture(GL_TEXTURE0 + unit));
-  GL(glBindTexture(GL_TEXTURE_CUBE_MAP, texture.getId()));
-  GL(glUniform1i(id, GLint(unit)));
-}
-
+#ifndef __EMSCRIPTEN__
 void GLProgram::unsetTexture1D(GLenum unit) const {
   GL(glActiveTexture(GL_TEXTURE0 + unit));
   GL(glBindTexture(GL_TEXTURE_1D, 0));
 }
+#endif
 
 void GLProgram::unsetTexture2D(GLenum unit) const {
   GL(glActiveTexture(GL_TEXTURE0 + unit));
@@ -293,13 +294,18 @@ void GLProgram::setUniform(const std::string& id, const Mat4& value, bool transp
   setUniform(getUniformLocation(id), value, transpose);
 }
 
-void GLProgram::setTexture(const std::string& id, const GLDepthTexture& texture, GLenum unit) const {
-  setTexture(getUniformLocation(id), texture, unit);
-}
 
+#ifndef __EMSCRIPTEN__
 void GLProgram::setTexture(const std::string& id, const GLTexture1D& texture, GLenum unit) const {
   setTexture(getUniformLocation(id), texture, unit);
 }
+void GLProgram::setTexture(const std::string& id, const GLDepthTexture& texture, GLenum unit) const {
+  setTexture(getUniformLocation(id), texture, unit);
+}
+void GLProgram::setTexture(const std::string& id, const GLTextureCube& texture, GLenum unit) const {
+  setTexture(getUniformLocation(id), texture, unit);
+}
+#endif
 
 void GLProgram::setTexture(const std::string& id, const GLTexture2D& texture, GLenum unit) const {
   setTexture(getUniformLocation(id), texture, unit);
@@ -309,6 +315,3 @@ void GLProgram::setTexture(const std::string& id, const GLTexture3D& texture, GL
   setTexture(getUniformLocation(id), texture, unit);
 }
 
-void GLProgram::setTexture(const std::string& id, const GLTextureCube& texture, GLenum unit) const {
-  setTexture(getUniformLocation(id), texture, unit);
-}

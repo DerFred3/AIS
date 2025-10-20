@@ -10,7 +10,7 @@ namespace ImageLoader {
     int width, height, nrComponents;
     stbi_uc* image_data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
     if (image_data) {
-      Image image{uint32_t(width),uint32_t(height),uint8_t(nrComponents)};
+      Image image(width,height,nrComponents);
 
       std::copy(image_data,
                 image_data + (width * height * nrComponents),
@@ -20,7 +20,7 @@ namespace ImageLoader {
       return image;
     } else {
       std::stringstream s;
-      s << "Can't load image file " << filename;
+      s << "Can't loaf image file " << filename;
       throw Exception(s.str());
     }
   }
