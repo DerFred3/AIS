@@ -35,4 +35,7 @@ $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@
 
 clean:
-	-rm -rf $(OBJ) $(TARGET) core
+	-rm -rf $(OBJ) $(TARGET) docs core
+
+docs:
+	doxygen Doxyfile
