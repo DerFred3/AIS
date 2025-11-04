@@ -116,7 +116,7 @@ for dir in [0-9][0-9]* ; do
                                 zip ${full_path}/${zip_name_full} ${full_path}/${line}
                         else
                                 if [ ${DRY_RUN} -eq 1 ]; then
-                                        log "    - -r flag was set; no zip file was created!"
+                                        log "    - -n flag was set; no zip file was created!"
                                 fi
 
                                 if [ ${REPLACE} -eq 0 ] && [ -f ${full_path}/${zip_name_full} ] && [ ${DRY_RUN} -eq 0 ]; then
