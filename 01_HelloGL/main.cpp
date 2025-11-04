@@ -9,12 +9,17 @@ GLFWwindow* window;
 GLuint vbo;
 GLuint vao;
 GLuint program;
+GLuint programOrange;
 
 // triangle vertex position data
-const float triangle[] = {
-	 0.0f,  0.5f, 0.0f, // top
-	-0.5f, -0.5f, 0.0f,	// bottom left
-	 0.5f, -0.5f, 0.0f  // bottom right
+const float triangles[] = {
+	-0.5f,  0.5f, 0.0f, // top
+  -0.5f, -0.5f, 0.0f,	// bottom left
+	 0.5f, -0.5f, 0.0f, // bottom right
+
+  -0.5f,  0.5f, 0.0f, // top left
+   0.5f,  0.5f, 0.0f, // top right
+   0.5f, -0.5f, 0.0f, // bottom
 };
 
 // vertex shader code
@@ -27,22 +32,32 @@ const char* vertexShaderSource =
 "}\0";
 
 // fragment shader code
-const char* fragmentShaderSource =
+const char* fragmentShaderGreen =
 "#version 410 core\n"
 "out vec4 fragColor;\n"
 "void main()\n"
 "{\n"
-"  fragColor = vec4(1.0f, 1.0f, 1.0f, 1.0);\n"
+"  fragColor = vec4(0.2f, 0.9f, 0.2f, 1.0);\n"
+"}\0";
+
+const char* fragmentShaderOrange =
+"#version 410 core\n"
+"out vec4 fragColor;\n"
+"void main()\n"
+"{\n"
+"  fragColor = vec4(0.9f, 0.5f, 0.2f, 1.0);\n"
 "}\0";
 
 
 static void draw() {
-  GL( glClearColor(0.0f, 0.0f, 0.0f, 1.0f) );
+  glClearColor(0.1f, 0.15f, 0.15f, 1.0f);
   GL( glClear(GL_COLOR_BUFFER_BIT) );
 
   GL( glBindVertexArray(vao) );
   GL( glUseProgram(program) );
   GL( glDrawArrays(GL_TRIANGLES, 0, 3) );
+  GL( glUseProgram(programOrange) );
+  GL( glDrawArrays(GL_TRIANGLES, 3, 6) );
   GL( glBindVertexArray(0) );
 }
 
@@ -55,16 +70,29 @@ static void setupShaders() {
   
   // create the fragment shader
   GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-  GL( glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL) );
+  GL( glShaderSource(fragmentShader, 1, &fragmentShaderGreen, NULL) );
   GL( glCompileShader(fragmentShader) );
   checkAndThrowShader(fragmentShader);
-  
+
   // link shaders into program
   program = glCreateProgram();
   GL( glAttachShader(program, vertexShader) );
   GL( glAttachShader(program, fragmentShader) );
   GL( glLinkProgram(program) );
   checkAndThrowProgram(program);
+
+  // Same for orange
+  fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+  GL( glShaderSource(fragmentShader, 1, &fragmentShaderOrange, NULL) );
+  GL( glCompileShader(fragmentShader) );
+  checkAndThrowShader(fragmentShader);
+
+  // link shaders into program
+  programOrange = glCreateProgram();
+  GL( glAttachShader(programOrange, vertexShader) );
+  GL( glAttachShader(programOrange, fragmentShader) );
+  GL( glLinkProgram(programOrange) );
+  checkAndThrowProgram(programOrange);
   
   GL( glDeleteShader(vertexShader) );
   GL( glDeleteShader(fragmentShader) );
@@ -78,7 +106,7 @@ static void setupGeometry() {
   // upload vertex positions to VBO
   GL( glGenBuffers(1, &vbo) );
   GL( glBindBuffer(GL_ARRAY_BUFFER, vbo) );
-  GL( glBufferData(GL_ARRAY_BUFFER, sizeof(triangle), triangle, GL_STATIC_DRAW) );
+  GL( glBufferData(GL_ARRAY_BUFFER, sizeof(triangles), triangles, GL_STATIC_DRAW) );
   
   GL( glEnableVertexAttribArray(0) );
   GL( glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0) );
