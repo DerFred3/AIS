@@ -87,16 +87,55 @@ public:
    *
    * Pausing stores a timestamp so resuming keeps animation time continuous.
    */
-  void setAnimation(bool animationActive);
+  void setAnimation(bool animationActive) {
+    if (this->animationActive && !animationActive) {
+#ifdef __EMSCRIPTEN__
+      resumeTime = emscripten_performance_now()/1000.0;
+#else
+      resumeTime = glfwGetTime();
+#endif
+    }
+
+    if (!this->animationActive && animationActive) {
+      if (resumeTime == 0) {
+#ifdef __EMSCRIPTEN__
+        startTime = emscripten_performance_now()/1000.0;
+#else
+        startTime = glfwGetTime();
+#endif
+      } else {
+#ifdef __EMSCRIPTEN__
+        startTime += emscripten_performance_now()/1000.0-resumeTime;
+#else
+        startTime += glfwGetTime()-resumeTime;
+#endif
+      }
+    }
+
+    this->animationActive = animationActive;
+  }
   /** @brief Query whether animation is currently active. */
-  bool getAnimation() const;
+  bool getAnimation() const {
+    return animationActive;
+  }
   /** @brief Reset the animation timer and invoke @ref animate(0). */
-  void resetAnimation();
+  void resetAnimation() {
+#ifdef __EMSCRIPTEN__
+    startTime = emscripten_performance_now()/1000.0;
+#else
+    startTime = glfwGetTime();
+#endif
+    resumeTime = 0;
+    animate(0);
+  }
 
   /**
    * @brief Current window aspect ratio (width/height).
    */
-  float getAspect() const;
+  float getAspect() const {
+    const Dimensions d = glEnv.getWindowSize();
+    return float(d.width)/float(d.height);
+  }
 
   /**
    * @brief Update filtering for images drawn by @ref drawImage().
@@ -350,7 +389,8 @@ private:
 
     // Default: unknown or unsupported
     return 0;
-  } EmscriptenUiEvent *uiEvent, void *userData);
+  }
+  
   /** @brief Keyboard callback (Emscripten); forwards to hooks. */
   static bool keyCallback(int eventType, const EmscriptenKeyboardEvent* keyEvent, void* userData) {
 
