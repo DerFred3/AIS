@@ -6,21 +6,44 @@ class MyGLApp : public GLApp {
 private:
   const float degreePreSecond{ 45.0f };
   float angle{0.0f};
+  bool playAnimation = true;
+  float animTime, animDelta, lastAnimationTime;
 
   Mat4 projection{};
+  Mat4 rotationX{};
+  Mat4 rotationY{};
+  Mat4 rotationZ{};
+  Mat4 toOrigin{};
+  Mat4 toTop{};
+  Mat4 toLeft{};
+  Mat4 toRight{};
+  Mat4 scaling{};
   GLuint program{0};
   GLint modelViewMatrixUniform{-1};
   GLint projectionMatrixUniform{-1};
+  GLint animationMatrixUniform{-1};
+  GLint toOriginMatrixUniform{-1};
+  GLint toPosMatrixUniform{-1};
+  GLint scalingMatrixUniform{-1};
   GLuint vbos{0};
   GLuint vaos{0};
 
   constexpr static float sqrt3{ 1.7320508076f };
 
-  constexpr static GLfloat vertexPositions[9] = {
-     1.5f, 2.0f, 0.0f,
-    -1.5f, 0.0f, 0.0f,
-     1.5f, 0.0f, 0.0f
+  constexpr static GLfloat triangles[] = {
+     0.5f,  1.0f,  0.0f, 1.0f, 0.0f, 0.0f,   // top->top
+     0.0f,  0.0f,  0.0f, 1.0f, 0.0f, 1.0f,   // top->left
+     1.0f,  0.0f,  0.0f, 1.0f, 1.0f, 0.0f,   // top->right
+
+     0.5f,  1.0f,  0.0f, 1.0f, 0.0f, 1.0f,  // left->top
+     0.0f,  0.0f,  0.0f, 0.0f, 0.0f, 1.0f,  // left->left
+     1.0f,  0.0f,  0.0f, 0.0f, 1.0f, 1.0f,  // left->right
+
+     0.5f,  1.0f,  0.0f, 1.0f, 1.0f, 0.0f,  // right->top
+     0.0f,  0.0f,  0.0f, 0.0f, 1.0f, 1.0f,  // right->left
+     1.0f,  0.0f,  0.0f, 0.0f, 1.0f, 0.0f,  // right->right
   };
+
 public:
   MyGLApp()
     : GLApp(800,600,4,"Assignment 02 - Triforce")
@@ -33,7 +56,30 @@ public:
   }
 
   virtual void animate(double animationTime) override {
+    animDelta = animationTime - lastAnimationTime;
 
+    if (playAnimation) {
+      animTime += animDelta;
+    }
+    
+    toOrigin = Mat4::translation(-0.5f, 0.5f, 0.0f);
+    rotationX = Mat4::rotationX(degreePreSecond * animTime);
+    rotationY = Mat4::rotationY(degreePreSecond * animTime);
+    rotationZ = Mat4::rotationZ(-degreePreSecond * animTime);
+    
+    GL(glUseProgram(program));
+    GL(glUniformMatrix4fv(toOriginMatrixUniform, 1, GL_TRUE, toOrigin));
+    GL(glUseProgram(0));  
+
+    lastAnimationTime = animationTime;
+  }
+
+  void toggleAnimation() {
+    playAnimation = !playAnimation;
+  }
+
+  void resetAnimation() {
+    animTime = 0.0f;
   }
 
   virtual void draw() override {
@@ -44,7 +90,29 @@ public:
     GL(glUniformMatrix4fv(modelViewMatrixUniform, 1, GL_TRUE, modelView));
     
     GL(glBindVertexArray(vaos));
-    GL(glDrawArrays(GL_TRIANGLES, 0, sizeof(vertexPositions) / sizeof(vertexPositions[0]) / 3));
+    
+    scaling = Mat4::scaling(1.75f);
+    // top triangle
+    toTop = Mat4::translation(0.0f, 0.5f, 0.0f);
+    GL(glUniformMatrix4fv(toPosMatrixUniform, 1, GL_TRUE, toTop));
+    GL(glUniformMatrix4fv(animationMatrixUniform, 1, GL_TRUE, rotationX));
+    GL(glUniformMatrix4fv(scalingMatrixUniform, 1, GL_TRUE, scaling));
+    GL(glDrawArrays(GL_TRIANGLES, 0, 3));
+    
+    // left triangle
+    toLeft = Mat4::translation(-0.375f, -0.5f, 0.0f);
+    GL(glUniformMatrix4fv(toPosMatrixUniform, 1, GL_TRUE, toLeft));
+    GL(glUniformMatrix4fv(animationMatrixUniform, 1, GL_TRUE, rotationZ));
+    GL(glUniformMatrix4fv(scalingMatrixUniform, 1, GL_TRUE, scaling));
+    GL(glDrawArrays(GL_TRIANGLES, 3, 3));
+    
+    // right triangle
+    toRight = Mat4::translation(0.375f, -0.5f, 0.0f);
+    GL(glUniformMatrix4fv(toPosMatrixUniform, 1, GL_TRUE, toRight));
+    GL(glUniformMatrix4fv(animationMatrixUniform, 1, GL_TRUE, rotationY));
+    GL(glUniformMatrix4fv(scalingMatrixUniform, 1, GL_TRUE, scaling));
+    GL(glDrawArrays(GL_TRIANGLES, 6, 3));
+    
     GL(glBindVertexArray(0));
     GL(glUseProgram(0));
   }
@@ -101,22 +169,29 @@ public:
     GL(glUseProgram(program));
     modelViewMatrixUniform = glGetUniformLocation(program, "modelViewMatrix");
     projectionMatrixUniform = glGetUniformLocation(program, "projectionMatrix");
+    animationMatrixUniform = glGetUniformLocation(program, "animationMatrix");
+    toOriginMatrixUniform = glGetUniformLocation(program, "toOriginMatrix");
+    toPosMatrixUniform = glGetUniformLocation(program, "toPosMatrix");
+    scalingMatrixUniform = glGetUniformLocation(program, "scalingMatrix");
     GL(glUseProgram(0));
   }
   
   void setupGeometry() {
     const GLuint vertexPos = GLuint(glGetAttribLocation(program, "vertexPosition"));
+    const GLuint colorPos = GLuint(glGetAttribLocation(program, "vertexColor"));
 
     GL(glGenVertexArrays(1, &vaos));
     GL(glBindVertexArray(vaos));
     
     GL(glGenBuffers(1, &vbos));
     GL(glBindBuffer(GL_ARRAY_BUFFER, vbos));
-    GL(glBufferData(GL_ARRAY_BUFFER, sizeof(vertexPositions), vertexPositions,
+    GL(glBufferData(GL_ARRAY_BUFFER, sizeof(triangles), triangles,
                     GL_STATIC_DRAW));
     
     GL(glEnableVertexAttribArray(vertexPos));
-    GL(glVertexAttribPointer(vertexPos, 3, GL_FLOAT, GL_FALSE, 0, (void*)0));
+    GL(glEnableVertexAttribArray(colorPos));
+    GL(glVertexAttribPointer(vertexPos, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0));
+    GL(glVertexAttribPointer(colorPos, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float))));
     
     GL(glBindVertexArray(0););
   }
@@ -125,6 +200,10 @@ public:
   {
     if (key == GLENV_KEY_ESCAPE && action == GLENV_PRESS)
       closeWindow();
+    if (key == GLENV_KEY_SPACE && action == GLENV_PRESS)
+      toggleAnimation();
+    if (key == GLENV_KEY_R && action == GLENV_PRESS)
+      resetAnimation();
   }
 };
 
