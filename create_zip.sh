@@ -108,12 +108,19 @@ for dir in [0-9][0-9]* ; do
                         log "    - Zip filename determined: <${zip_name_full}>"
                         log "    - To-be-zipped files: <${line}>"
 
+                        # create file-string for zip command
+                        files=""
+                        for file in ${line}; do
+                                files="${files} ${full_path}/${file}"
+                        done
+                        files=${files:1}
+
                         # Only create zip, if not a dry run and file does not exist, or REPLACE flag is set
-                        if [ ${DRY_RUN} -eq 0 ] && [ ! -f ${full_path}/${zip_name_full} ] || [ ${REPLACE} -eq 1 ]; then
-                                log "    - Trying to execute: zip ${full_path}/${zip_name_full} ${full_path}/${line}" 
+                        if [ ${DRY_RUN} -eq 0 ] && ([ ! -f ${full_path}/${zip_name_full} ] || [ ${REPLACE} -eq 1 ]); then
+                                log "    - Trying to execute: zip -j ${full_path}/${zip_name_full} ${files}" 
 
                                 # actual command execution using zip
-                                zip ${full_path}/${zip_name_full} ${full_path}/${line}
+                                zip -j ${full_path}/${zip_name_full} ${files}
                         else
                                 if [ ${DRY_RUN} -eq 1 ]; then
                                         log "    - -n flag was set; no zip file was created!"
