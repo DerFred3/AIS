@@ -269,17 +269,17 @@ public:
   }
 
   virtual void mouseButton(int button, int action, int mods, double xPosition, double yPosition) override {
-    if (button == GLFW_MOUSE_BUTTON_RIGHT) rightMouseDown = action == GLFW_PRESS;
-    if (button == GLFW_MOUSE_BUTTON_LEFT) leftMouseDown = action == GLFW_PRESS;
+    if (button == GLENV_MOUSE_BUTTON_RIGHT) rightMouseDown = action == GLENV_PRESS;
+    if (button == GLENV_MOUSE_BUTTON_LEFT) leftMouseDown = action == GLENV_PRESS;
 
-    if ((button == GLFW_MOUSE_BUTTON_LEFT ||
-         button == GLFW_MOUSE_BUTTON_RIGHT) && action == GLFW_PRESS) {
+    if ((button == GLENV_MOUSE_BUTTON_LEFT ||
+         button == GLENV_MOUSE_BUTTON_RIGHT) && action == GLENV_PRESS) {
       mouse[0] = static_cast<float>(xPosition);
       mouse[1] = static_cast<float>(yPosition);
       cameraActive = true;
       firstCameraUpdate = true;
-    } else if ((button == GLFW_MOUSE_BUTTON_LEFT ||
-              button == GLFW_MOUSE_BUTTON_RIGHT) && action == GLFW_RELEASE) {
+    } else if ((button == GLENV_MOUSE_BUTTON_LEFT ||
+              button == GLENV_MOUSE_BUTTON_RIGHT) && action == GLENV_RELEASE) {
       cameraActive = false;
       firstCameraUpdate = false;
     }
