@@ -4,14 +4,20 @@
 #include <Vec2.h>
 #include "Teapot.h"
 #include "UnitPlane.h"
+#include "UnitCube.h"
 
 class MyGLApp : public GLApp {
 public:
+  const float degreePreSecond{ 45.0f };
+  float angle{0.0f};
+  bool playAnimation{false};
   double time{};
+  double animTime{0.0};
 
   GLuint pFlat{};
   GLuint pGouraud{};
   GLuint pPhong{};
+  GLuint pLight{};
   Mat4 modelMatrix{};
   Mat4 projectionMatrix{};
   Mat4 viewMatrix{};
@@ -22,17 +28,22 @@ public:
   GLint modelViewProjectionMatrixUniform{-1};
 
   enum class Shading {
-    FLAT, GOURAUD, PHONG
+    FLAT, GOURAUD, PHONG, LIGHT
   };
 
   Shading shading{Shading::FLAT};
+  Shading shading_prev{Shading::FLAT};
 
   Vec3 kd = { 1, 1, 1 }; // material diffuse color
   GLint kdUniform{-1};
+  GLint modelMatrixUniform{-1};
+  GLint lightPosUniform{-1};
+  GLint viewPosUniform{-1};
 
-  GLuint vbos[4]{ };
-  GLuint vaos[2]{ };
+  GLuint vbos[6]{ };
+  GLuint vaos[3]{ };
   GLuint eboTeapot{};
+  GLuint eboCube{};
 
   // camera
   bool cameraActive{false};
@@ -43,6 +54,8 @@ public:
   float mouseSensitivity{0.15f}; // system specific factor
   float mousewheelFactor{10.0f}; // system specific factor
 
+  Vec3 lightCubePosition { -35.0, 35.0, 35.0 };
+
   MyGLApp() : GLApp(800,600,1,"Assignment 03 - Hello Shading") {}
 
   virtual void init() override {
@@ -50,6 +63,7 @@ public:
     setupShaders();
     setupGeometry();
     GL(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
+    glEnable(GL_DEPTH_TEST);
   }
 
   void selectShading() {
@@ -69,6 +83,9 @@ public:
         kd = { 0.0f, 0.0f, 0.8f };
         GL(glUniform3fv(kdUniform, 1, kd));
         break;
+      case Shading::LIGHT:
+        GL(glUseProgram(pLight));
+        break;
     }
   }
 
@@ -76,27 +93,58 @@ public:
     double t = glfwGetTime();
     double d = t - time;
     time = t;
+    if (playAnimation) animTime += d;
 
     GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
     selectShading();
+
     viewMatrix = Mat4::translation(viewPosition[0], viewPosition[1], viewPosition[2]);
     viewMatrix = viewMatrix * Mat4::rotationX(viewRotation[0]);
     viewMatrix = viewMatrix * Mat4::rotationY(viewRotation[1]);
     viewMatrix = viewMatrix * Mat4::rotationZ(viewRotation[2]);
 
+    Mat4 viewRotationMatrix;
+    viewRotationMatrix = viewRotationMatrix * Mat4::rotationX(viewRotation[0]);
+    viewRotationMatrix = viewRotationMatrix * Mat4::rotationY(viewRotation[1]);
+    viewRotationMatrix = viewRotationMatrix * Mat4::rotationZ(viewRotation[2]);
+    
+    GL(glUniform3fv(viewPosUniform, 1, Mat4::inverse(viewRotationMatrix) * (viewPosition * -1)));
+
+    // Light cube
+    shading_prev = shading;
+    shading = Shading::LIGHT;
+    selectShading();
     modelMatrix = Mat4();
-    modelMatrix = modelMatrix * Mat4::scaling(100, 100, 100);
+    modelMatrix = Mat4::rotationY(animTime * degreePreSecond) * Mat4::translation(lightCubePosition) * modelMatrix;
     Mat4 modelViewProjection = projectionMatrix * viewMatrix * modelMatrix;
     GL(glUniformMatrix4fv(modelViewProjectionMatrixUniform, 1, GL_TRUE, modelViewProjection));
+    GL(glBindVertexArray(vaos[2]));
+    GL(glDrawElements(GL_TRIANGLES, sizeof(UnitCube::indices) / sizeof(UnitCube::indices[0]), GL_UNSIGNED_INT, (void*)0));
+    shading = shading_prev;
+    selectShading();
+
+    // Set lightPos
+    Vec4 lightPos4 = modelMatrix * Vec4(0.0, 0.0, 0.0, 1.0);
+    GL(glUniform3fv(lightPosUniform, 1, Vec3(lightPos4.x, lightPos4.y, lightPos4.z)));
+
+    // Draw unit plane
+    modelMatrix = Mat4();
+    modelMatrix = modelMatrix * Mat4::scaling(100, 100, 100);
+    modelViewProjection = projectionMatrix * viewMatrix * modelMatrix;
+    GL(glUniformMatrix4fv(modelViewProjectionMatrixUniform, 1, GL_TRUE, modelViewProjection));
+    GL(glUniformMatrix4fv(modelMatrixUniform, 1, GL_TRUE, modelMatrix));
     GL(glBindVertexArray(vaos[0]));
     GL(glDrawArrays(GL_TRIANGLES, 0, sizeof(UnitPlane::vertices) / (3*sizeof(UnitPlane::vertices[0]))));
 
+    // Draw teapot
     modelMatrix = Mat4();
     modelViewProjection = projectionMatrix * viewMatrix * modelMatrix;
     GL(glUniformMatrix4fv(modelViewProjectionMatrixUniform, 1, GL_TRUE, modelViewProjection));
+    GL(glUniformMatrix4fv(modelMatrixUniform, 1, GL_TRUE, modelMatrix));
     GL(glBindVertexArray(vaos[1]));
     GL(glDrawElements(GL_TRIANGLES, sizeof(Teapot::indices) / sizeof(Teapot::indices[0]), GL_UNSIGNED_INT, (void*)0));
+    
     GL(glBindVertexArray(0));
 
   }
@@ -143,6 +191,9 @@ public:
 
     modelViewProjectionMatrixUniform = glGetUniformLocation(pFlat, "MVP");
     kdUniform = glGetUniformLocation(pFlat, "kd");
+    modelMatrixUniform = glGetUniformLocation(pFlat, "model");
+    lightPosUniform = glGetUniformLocation(pFlat, "lightPos");
+    viewPosUniform = glGetUniformLocation(pFlat, "viewPos");
 
     GL(glDeleteShader(vertexShader));
     GL(glDeleteShader(fragmentShader));
@@ -156,6 +207,7 @@ public:
     GL(glAttachShader(pGouraud, fragmentShader));
     GL(glLinkProgram(pGouraud));
     checkAndThrowProgram(pGouraud);
+
     GL(glDeleteShader(vertexShader));
     GL(glDeleteShader(fragmentShader));
 
@@ -171,6 +223,18 @@ public:
     GL(glDeleteShader(vertexShader));
     GL(glDeleteShader(fragmentShader));
 
+    vertexSrcPath =  "res/shaders/light.vert";
+    fragmentSrcPath =  "res/shaders/light.frag";
+    vertexShader = createShaderFromFile(GL_VERTEX_SHADER, vertexSrcPath);
+    fragmentShader = createShaderFromFile(GL_FRAGMENT_SHADER, fragmentSrcPath);
+    pLight = glCreateProgram();
+    GL(glAttachShader(pLight, vertexShader));
+    GL(glAttachShader(pLight, fragmentShader));
+    GL(glLinkProgram(pLight));
+    checkAndThrowProgram(pLight);
+    GL(glDeleteShader(vertexShader));
+    GL(glDeleteShader(fragmentShader));
+
     selectShading();
   }
 
@@ -178,9 +242,10 @@ public:
     const GLuint vertexPositionLocation = GLuint(glGetAttribLocation(pPhong, "vertexPosition"));
     const GLuint vertexNormalLocation = GLuint(glGetAttribLocation(pPhong, "vertexNormal"));
 
-    GL(glGenVertexArrays(2, vaos));
-    GL(glGenBuffers(4, vbos));
+    GL(glGenVertexArrays(3, vaos));
+    GL(glGenBuffers(6, vbos));
     GL(glGenBuffers(1, &eboTeapot));
+    GL(glGenBuffers(1, &eboCube));
 
     // unit plane in xy-plane
     GL(glBindVertexArray(vaos[0]));
@@ -211,6 +276,22 @@ public:
     GL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboTeapot));
     GL(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Teapot::indices), Teapot::indices, GL_STATIC_DRAW));
 
+    // unit cube
+    GL(glBindVertexArray(vaos[2]));
+    // setup vertices
+    GL(glBindBuffer(GL_ARRAY_BUFFER, vbos[4]));
+    GL(glBufferData(GL_ARRAY_BUFFER, sizeof(UnitCube::vertices), UnitCube::vertices, GL_STATIC_DRAW));
+    GL(glVertexAttribPointer(vertexPositionLocation, 3, GL_FLOAT, GL_FALSE, 0, (void*)0));
+    GL(glEnableVertexAttribArray(vertexPositionLocation));
+    // setup normals
+    GL(glBindBuffer(GL_ARRAY_BUFFER, vbos[5]));
+    GL(glBufferData(GL_ARRAY_BUFFER, sizeof(UnitCube::normals), UnitCube::normals, GL_STATIC_DRAW));
+    GL(glVertexAttribPointer(vertexNormalLocation, 3, GL_FLOAT, GL_FALSE, 0, (void*)0));
+    GL(glEnableVertexAttribArray(vertexNormalLocation));
+    // setup indices for indexed drawing the cube
+    GL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboCube));
+    GL(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(UnitCube::indices), UnitCube::indices, GL_STATIC_DRAW));
+
     GL(glBindVertexArray(0));
   }
 
@@ -233,6 +314,12 @@ public:
         case GLENV_KEY_P:
           shading = Shading::PHONG;
           std::cout << "switched to PHONG shading" << std::endl;
+          break;
+        case GLENV_KEY_SPACE:
+          playAnimation = !playAnimation;
+          break;
+        case GLENV_KEY_R:
+          animTime = 0.0;
           break;
       }
 

@@ -7,10 +7,23 @@ uniform mat4 MVP; // model-view-projection Matrix
 
 uniform vec3 kd; // material diffuse color
 
-out vec4 C;
+uniform mat4 model;
+uniform vec3 lightPos; // light position
+uniform vec3 viewPos;
+
+flat out vec3 FragPos;
+flat out vec3 Normal;
+flat out vec3 LightPos;
+flat out vec3 DiffuseColor;
+flat out vec3 ViewPos;
 
 void main()
 {
+	FragPos = vec3(model * vec4(vertexPosition, 1.0));
+	Normal = vertexNormal;
+	LightPos = lightPos;
+	DiffuseColor = kd;
+	ViewPos = viewPos;
+
 	gl_Position = MVP * vec4(vertexPosition, 1);
-	C = vec4(0.5 * vertexNormal + 0.5 * kd, 1);
 }
