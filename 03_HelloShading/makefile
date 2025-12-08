@@ -15,7 +15,7 @@ endif
 
 SRC = main.cpp
 OBJ = $(SRC:.cpp=.o)
-TARGET = triforce
+TARGET = helloShading
 
 all: $(TARGET)
 
@@ -33,7 +33,7 @@ $(TARGET): $(OBJ) ../Utils/libutils.a
 	
 clean:
 	-rm -rf $(OBJ) $(TARGET) core Solution.*
-	
+
 mrproper: clean
 	cd ../Utils && make clean
 
