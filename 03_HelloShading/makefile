@@ -15,7 +15,7 @@ endif
 
 SRC = main.cpp
 OBJ = $(SRC:.cpp=.o)
-TARGET = hello_shading
+TARGET = helloShading
 
 all: $(TARGET)
 
@@ -32,7 +32,10 @@ $(TARGET): $(OBJ) ../Utils/libutils.a
 	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@
 	
 clean:
-	-rm -rf $(OBJ) $(TARGET) core
-	
+	-rm -rf $(OBJ) $(TARGET) core Solution.*
+
 mrproper: clean
 	cd ../Utils && make clean
+
+emscripten:
+	em++ $(SRC) ../Utils/GLEnv.cpp ../Utils/GLApp.cpp ../Utils/GLDebug.cpp ../Utils/GLArray.cpp ../Utils/GLBuffer.cpp ../Utils/GLProgram.cpp ../Utils/GLTexture2D.cpp -o Solution.html -s ALLOW_MEMORY_GROWTH=1 -D__EMSCRIPTEN__=1 -s USE_GLFW=3 -s FULL_ES3=1 -O2 -I. -I../Utils --preload-file res/shaders/flat3.frag --preload-file res/shaders/flat3.vert --preload-file res/shaders/gouraud3.frag --preload-file res/shaders/gouraud3.vert --preload-file res/shaders/light3.frag --preload-file res/shaders/light3.vert --preload-file res/shaders/phong3.frag --preload-file res/shaders/phong3.vert

@@ -128,8 +128,7 @@ public:
     pSimpleTex.setTexture("ts", stonesSpecular, 1);
     pSimpleTex.setTexture("tn", stonesNormals, 2);
     planeArray.bind();
-    GL(glDrawArrays(GL_TRIANGLES, 0, sizeof(UnitPlane::vertices) / sizeof(UnitPlane::vertices[0])));
-    
+    GL(glDrawArrays(GL_TRIANGLES, 0, sizeof(UnitPlane::vertices) / (3*sizeof(UnitPlane::vertices[0]))));
     modelMatrix = {};
     modelView = viewMatrix * modelMatrix;
     modelViewProjection = projectionMatrix * modelView;
@@ -210,17 +209,17 @@ public:
   }
 
   virtual void keyboard(int key, int scancode, int action, int mods) override {
-    if (key == GLFW_KEY_LEFT_CONTROL) controlDown = action == GLFW_PRESS;
+    if (key == GLENV_KEY_LEFT_CONTROL) controlDown = action == GLENV_PRESS;
 
-    if (action == GLFW_PRESS) {
+    if (action == GLENV_PRESS) {
       switch (key) {
-        case GLFW_KEY_ESCAPE:
+        case GLENV_KEY_ESCAPE:
           closeWindow();
           break;
-        case GLFW_KEY_SPACE:
+        case GLENV_KEY_SPACE:
           setAnimation(!getAnimation());
           break;
-        case GLFW_KEY_R:
+        case GLENV_KEY_R:
           resetAnimation();
           viewPosition = Vec3{ 0, 0, -100 };
           viewRotation = Vec3{ -45, 0, 0 };
@@ -260,17 +259,17 @@ public:
 
   virtual void mouseButton(int button, int action, int mods, 
                            double xPosition, double yPosition) override {
-    if (button == GLFW_MOUSE_BUTTON_RIGHT) rightMouseDown = action == GLFW_PRESS;
-    if (button == GLFW_MOUSE_BUTTON_LEFT) leftMouseDown = action == GLFW_PRESS;
+    if (button == GLENV_MOUSE_BUTTON_RIGHT) rightMouseDown = action == GLENV_MOUSE_PRESS;
+    if (button == GLENV_MOUSE_BUTTON_LEFT) leftMouseDown = action == GLENV_MOUSE_PRESS;
 
-    if ((button == GLFW_MOUSE_BUTTON_LEFT ||
-         button == GLFW_MOUSE_BUTTON_RIGHT) && action == GLFW_PRESS) {
+    if ((button == GLENV_MOUSE_BUTTON_LEFT ||
+         button == GLENV_MOUSE_BUTTON_RIGHT) && action == GLENV_MOUSE_PRESS) {
       mouse[0] = static_cast<float>(xPosition);
       mouse[1] = static_cast<float>(yPosition);
       cameraActive = true;
       firstCameraUpdate = true;
-    } else if ((button == GLFW_MOUSE_BUTTON_LEFT ||
-              button == GLFW_MOUSE_BUTTON_RIGHT) && action == GLFW_RELEASE) {
+    } else if ((button == GLENV_MOUSE_BUTTON_LEFT ||
+              button == GLENV_MOUSE_BUTTON_RIGHT) && action == GLENV_MOUSE_RELEASE) {
       cameraActive = false;
       firstCameraUpdate = false;
     }
