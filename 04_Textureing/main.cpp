@@ -128,8 +128,7 @@ public:
     pSimpleTex.setTexture("ts", stonesSpecular, 1);
     pSimpleTex.setTexture("tn", stonesNormals, 2);
     planeArray.bind();
-    GL(glDrawArrays(GL_TRIANGLES, 0, sizeof(UnitPlane::vertices) / sizeof(UnitPlane::vertices[0])));
-    
+    GL(glDrawArrays(GL_TRIANGLES, 0, sizeof(UnitPlane::vertices) / (3*sizeof(UnitPlane::vertices[0]))));
     modelMatrix = {};
     modelView = viewMatrix * modelMatrix;
     modelViewProjection = projectionMatrix * modelView;
